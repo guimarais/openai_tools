@@ -1,0 +1,3 @@
+type,name,description,param_name,param_type,param_description,param_required
+function,get_horoscope,Get today's horoscope for an astrological sign.,sign,string,An astrological sign like Taurus or Aquarius,True
+function,get_file,Reads and prints a file's content to the STDOUT.,filename,string,The path to the file to read like 'fname.txt',True

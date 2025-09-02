@@ -1,61 +1,28 @@
 from dotenv import load_dotenv
 from openai import OpenAI
-import json 
+import json
+from utils.tool_schema import tool_schema
+from utils.tool_functions import get_horoscope
+from utils.tool_functions import get_file
+from utils.aux import extract_code_blocks
 
 load_dotenv()
 
 client = OpenAI()
 
-# 1. Define a list of callable tools for the model
-tools = [
-    {
-        "type": "function",
-        "name": "get_horoscope",
-        "description": "Get today's horoscope for an astrological sign.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "sign": {
-                    "type": "string",
-                    "description": "An astrological sign like Taurus or Aquarius",
-                },
-            },
-            "required": ["sign"],
-        },
-    },
-    {
-        "type": "function",
-        "name": "get_file",
-        "description": "Reads and prints a file's content to the STDOUT.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "filename": {
-                    "type": "string",
-                    "description": "The path to the file to read like 'fname.txt'",
-                },
-            },
-            "required": ["filename"],
-        },
-    },
-
-
-]
-
-def get_horoscope(sign):
-    return f"{sign}: Next Tuesday you will befriend a baby otter."
-
-def get_file(path_dict):
-    with open(path_dict['filename'], 'r') as file:
-        content = file.read()
-    print(content)
-    return content
+# 1. Load tool schema
+tools = tool_schema("./schema/from_sql.csv")
 
 # Create a running input list we will add to over time
-input_list = [
-    {"role": "user", "content": "What are the contents of the 'files/test.md' file? Print just the contents."}
-]
+user_file_prompt ="""
+                  What are the contents of the 'files/test.md' file?
+                  Print just the contents.
+                  DO not make additional comments.
+                  """
 
+input_list = [
+    {"role": "user", "content": user_file_prompt}
+]
 
 # 2. Prompt the model with tools defined
 response = client.responses.create(
@@ -82,7 +49,7 @@ for item in response.output:
                 })
             })
         if item.name == "get_file":
-            # 3. Execute the function logic for get_horoscope
+            # 3. Execute the function logic for get_file
             content = get_file(json.loads(item.arguments))
             
             # 4. Provide function call results to the model
@@ -96,8 +63,8 @@ for item in response.output:
 
 
 
-print("Final input:")
-print(input_list)
+#print("Final input:")
+#print(input_list)
 
 response = client.responses.create(
     model="gpt-4",
@@ -107,9 +74,15 @@ response = client.responses.create(
 )
 
 # 5. The model should be able to give a response!
-print("Final output:")
-print(response.model_dump_json(indent=2))
-print("\n" + response.output_text)
+#print("Final output:")
+#print(response.model_dump_json(indent=2))
+print(response.output_text)
+
+with open("./files/response_output.txt", "w") as f:
+    f.write(response.output_text)
+
+f.close()
+
 
 #def main():
 #    print("Hello from openai-tools!")
